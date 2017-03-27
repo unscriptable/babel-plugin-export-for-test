@@ -1,0 +1,10 @@
+[ignore]
+.*/\.git/.*
+.*/doc/.*
+
+[include]
+
+[libs]
+flow-libs
+
+[options]

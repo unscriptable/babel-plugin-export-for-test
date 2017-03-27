@@ -1,0 +1,38 @@
+{
+  "name": "babel-plugin-export-for-test",
+  "version": "1.0.0",
+  "description": "A babel plugin to export test functions.",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "npm run clean && npm run typecheck && npm run build-src && npm run dist",
+    "build-src": "babel --copy-files --out-dir build/src src",
+    "build-src-and-tests": "BABEL_ENV=test babel --copy-files --out-dir build/src src",
+    "clean": "rm -rf dist  & rm -rf build",
+    "dist": "rollup -c",
+    "push": "npm run aws-package && npm run aws-deploy",
+    "repl": "babel-node",
+    "temp": "BABEL_ENV=test babel",
+    "temp2": "BABEL_ENV=production babel",
+    "test": "npm run clean && npm run typecheck && npm run build-src-and-tests",
+    "typecheck": "flow"
+  },
+  "dependencies": {
+    "mustache": "^2.3.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-plugin-syntax-flow": "^6.18.0",
+    "babel-plugin-transform-async-to-module-method": "^6.16.0",
+    "babel-plugin-transform-class-properties": "^6.19.0",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "babel-preset-env": "^1.2.1",
+    "babel-register": "^6.24.0",
+    "babelrc-rollup": "^3.0.0",
+    "flow-bin": "^0.41.0",
+    "rollup": "^0.41.5",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-node-resolve": "^2.0.0"
+  },
+  "author": "John Hann (unscriptable)",
+  "license": "MIT"
+}
