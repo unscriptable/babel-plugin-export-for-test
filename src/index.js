@@ -1,77 +1,132 @@
 // Babel plugin to export tests
 
-// var render = require('mustache').render
-
 // var nodeName = require('./babelNode').nodeName
-// var mochaTemplate = require('./template/mocha-file.mustache.js')
 
-const log = console.log
-
-/*
-TODO: doc this
-
-TODO: create a test runner / manifest. perhaps it's a module name
-*/
+// const log = console.log
 
 module.exports
     = babel => {
-        const processNode
-            = process.env.BABEL_ENV === 'test' ? exportNode : removeNode
-        return ({
-            visitor: {
-                Program: processProgram,
-                Declaration: processNode(babel),
-                // Performance optimizations:
-                Function: skip
-            }
-        })
+        const testEnv = process.env.BABEL_ENV === 'test'
+        const collect = testEnv ? collectTests : x => x
+        const visitor
+            = Object.assign(
+                {},
+                visitorToSkipLowerLevels(),
+                visitorForInlineComment(collect, babel, testEnv),
+                visitorForPrefixComment(collect, babel, testEnv)
+            )
+
+        return { visitor }
     }
 
-const processProgram
-    = (path, state) =>
-        findExportsforTest(path.node.body || [])
-            .forEach(node => node.__isExportForTest = true)
-
-const exportNode
-    = ({ types }) => (path, state) => {
-        if (path.node.__isExportForTest) {
-            // TODO: why doesn't this work?
-            if (types.isExportNamedDeclaration(path.parentPath.node)) {
-                throw path.buildCodeFrameError('Declaration declared as `export for test` is already exported')
-            }
-            path.node.__isExportForTest = false // prevent infintie loop
-            path.replaceWith(types.exportNamedDeclaration(path.node, []))
-        }
+const collectTests
+    = collection => (path, state) => {
+console.log(state)
+        const filename = '?'
+        const testname = '?'
+        const tests = collection[filename]
+        if (!tests) tests = collection[filename] = []
+        tests.push(testname)
     }
 
-const removeNode
-    = ({ types }) => (path, state) => {
-        if (path.node.__isExportForTest) {
-            // TODO: why doesn't this work?
-            types.removeComments(path.node)
-            path.remove()
-        }
+const before
+    = (f, advice) => (...x) => {
+        advice(...x)
+        return f(...x)
     }
-const findExportsforTest
-    = nodes =>
-        nodes.filter(hasExportForTestComment)
 
-const hasExportForTestComment
-    = node =>
-        isIterable(node.leadingComments)
-            && node.leadingComments.some(isExportforTestComment(node))
+// Inline export comment: `export /* for test */`
 
-const isExportforTestComment
-    = node => comment =>
-        hasTestAnnotation(comment) && linesApart(comment.loc, node.loc) <= 1
+// Create visitor
+const visitorForInlineComment
+    = (log, babel, testEnv) => {
+        const op = testEnv ? replaceWithDeclaration : removeLeadingComments
+        const loggedOp = before(op, log)
+        const visit
+            = (path, state) => hasInlineComment(path) && loggedOp(path, state)
 
-const isIterable
-    = a => a && a.length > 0 && typeof a.some === 'function'
+        return { ExportNamedDeclaration: visit }
+    }
 
-const hasTestAnnotation
-    = comment => comment.value.match(/export for test/)
+const replaceWithDeclaration
+    = path => path.replaceWith(declaration(path))
 
-const linesApart
-    = (loc1, loc2) => Math.abs(loc1.start.line - loc2.start.line)
+// TODO: try this: types.removeComments(path.node)
+const removeLeadingComments
+    = path => declaration(path).leadingComments = null
 
-const skip = (path) => path.skip()
+const hasInlineComment
+    = path => {
+        const comments = leadingComments(path)
+        return comments != null && isInlineComment(last(comments))
+    }
+
+const isInlineComment
+    = comment => comment && !!comment.matches(/\s*for\s+test\s*/)
+
+const getNestedProperty
+    = path => object =>
+        getNnestedProperty(path.split('.'), object)
+
+const _nestedProperty
+    = (levels, object) => {
+        return object && levels.length === 1
+            ? object[levels[0]]
+            : _nestedProperty(levels.slice(1), object)
+    }
+
+const declaration = getNestedProperty('node.declaration')
+const leadingComments = getNestedProperty('node.declaration.leadingComments')
+const bodyNodes = getNestedProperty('node.body.nodes')
+
+// Prefix export comment: `/* export for test */`
+
+// TODO: add visitor to skip non-top-level nodes
+
+// Create visitor
+const visitorForPrefixComment
+    = (log, { types }, testEnv) => {
+        const op
+            = testEnv
+                ? exportDeclaration(types.exportNamedDeclaration)
+                : removeLeadingComments
+        const loggedOp = before(op, log)
+        const visit
+            = (path, state) => hasPrefixComment(path) && loggedOp(path, state)
+
+        return { Declaration: visit }
+    }
+
+const hasPrefixComment
+    = path => {
+        const comments = leadingComments(path)
+        return comments != null && isPrefixComment(last(comments))
+    }
+
+const isPrefixComment
+    = comment => comment && !!comment.matches(/\s*export\s*for\s+test\s*/)
+
+const exportDeclaration
+    = exportNamedDeclaration => path =>
+        path.replaceWith(exportNamedDeclaration(path.node, []))
+
+// TODO: throw if already exported:
+    // if (types.isExportNamedDeclaration(path.parentPath.node)) {
+    //     throw path.buildCodeFrameError('Declaration declared as `export for test` is already exported')
+    // }
+
+// Performance optimizations
+
+// Create visitor
+const visitorToSkipLowerLevels
+    = _ => ({
+        Function: skip,
+        Class: skip
+    })
+
+// const linesApart
+//     = (loc1, loc2) => Math.abs(loc1.start.line - loc2.start.line)
+
+const skip = path => path.skip()
+
+const last = array => array[array.length - 1]
