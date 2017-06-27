@@ -2,7 +2,7 @@
   "presets": [
     [
       "env",
-      { "targets": { "node": 4.3 }, "modules": false, "loose": true }
+      { "targets": { "node": 6.10 }, "modules": "commonjs", "loose": true }
     ]
   ],
   "plugins": [
@@ -16,6 +16,9 @@
       "transform-async-to-module-method",
       { "module": "creed", "method": "coroutine" }
     ],
-    [ "./src" ]
+    [
+      "./src",
+      { "manifest": "build/test_manifest.json" }
+    ]
   ]
 }

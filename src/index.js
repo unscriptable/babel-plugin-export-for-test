@@ -1,13 +1,27 @@
 // Babel plugin to export tests
 
-// var nodeName = require('./babelNode').nodeName
+const nodeName = require('./babelNode').nodeName
+
+const writeFileSync = require('fs').writeFileSync
 
 // const log = console.log
+
+// TODO: verbose option
+// TODO: allow other options to collect tests
 
 module.exports
     = babel => {
         const testEnv = process.env.BABEL_ENV === 'test'
-        const collect = testEnv ? collectTests : x => x
+        const tests = {}
+        const writeManifest = soon(writeJson(writeFileSync))
+        const writeTests
+            = (path, state) => {
+                const filename = state.opts.manifest || 'test_manifest.json'
+                writeManifest(filename, tests)
+            }
+        const collectTests = collectTestNames(tests)
+        const collect = testEnv ? trace(collectTests, writeTests) : x => x
+
         const visitor
             = Object.assign(
                 {},
@@ -19,14 +33,25 @@ module.exports
         return { visitor }
     }
 
-const collectTests
+const collectTestNames
     = collection => (path, state) => {
-console.log(state)
-        const filename = '?'
-        const testname = '?'
-        const tests = collection[filename]
-        if (!tests) tests = collection[filename] = []
+        const filename = state.file.opts.filename
+        const testname = nodeName(path.node)
+        const tests = collection[filename] || (collection[filename] = [])
         tests.push(testname)
+    }
+
+const writeJson
+    = write => (filename, thing) =>
+        write(filename, JSON.stringify(thing))
+
+const soon
+    = f => {
+        let handle
+        return (...x) => {
+            clearTimeout(handle)
+            handle = setTimeout(_ => f(...x), 0)
+        }
     }
 
 const before
@@ -35,12 +60,29 @@ const before
         return f(...x)
     }
 
+const after
+    = (f, advice) => (...x) => {
+        const result = f(...x)
+        advice(result)
+        return result
+    }
+
+const trace
+    = (f, advice) => (...x) => {
+        const result = f(...x)
+        advice(...x.concat(result))
+        return result
+    }
+
 // Inline export comment: `export /* for test */`
 
 // Create visitor
 const visitorForInlineComment
     = (log, babel, testEnv) => {
-        const op = testEnv ? replaceWithDeclaration : removeLeadingComments
+        const op
+            = testEnv
+                ? removeLeadingComments
+                : before(replaceWithDeclaration, removeLeadingComments)
         const loggedOp = before(op, log)
         const visit
             = (path, state) => hasInlineComment(path) && loggedOp(path, state)
@@ -53,30 +95,37 @@ const replaceWithDeclaration
 
 // TODO: try this: types.removeComments(path.node)
 const removeLeadingComments
-    = path => declaration(path).leadingComments = null
+    = path => {
+        path.node.innerComments = null
+        declaration(path).leadingComments = null
+    }
 
 const hasInlineComment
     = path => {
-        const comments = leadingComments(path)
-        return comments != null && isInlineComment(last(comments))
+        const comments = leadingComments1(path)
+        return Array.isArray(comments) && isInlineComment(last(comments))
     }
 
 const isInlineComment
-    = comment => comment && !!comment.matches(/\s*for\s+test\s*/)
+    = comment =>
+        comment
+        && comment.value
+        && !!comment.value.match(/^\s*for\s+test\s*$/)
 
 const getNestedProperty
     = path => object =>
-        getNnestedProperty(path.split('.'), object)
+        _nestedProperty(path.split('.'), object)
 
 const _nestedProperty
     = (levels, object) => {
-        return object && levels.length === 1
-            ? object[levels[0]]
-            : _nestedProperty(levels.slice(1), object)
+        return levels.length === 0 || typeof object !== 'object'
+            ? object
+            : _nestedProperty(levels.slice(1), object[levels[0]])
     }
 
 const declaration = getNestedProperty('node.declaration')
-const leadingComments = getNestedProperty('node.declaration.leadingComments')
+const leadingComments1 = getNestedProperty('node.declaration.leadingComments')
+const leadingComments2 = getNestedProperty('node.leadingComments')
 const bodyNodes = getNestedProperty('node.body.nodes')
 
 // Prefix export comment: `/* export for test */`
@@ -86,10 +135,16 @@ const bodyNodes = getNestedProperty('node.body.nodes')
 // Create visitor
 const visitorForPrefixComment
     = (log, { types }, testEnv) => {
+        const skipChildren = path => path.skip()
+        const exportAndSkip
+            = trace(
+                exportDeclaration(types.exportNamedDeclaration),
+                skipChildren
+            )
         const op
             = testEnv
-                ? exportDeclaration(types.exportNamedDeclaration)
-                : removeLeadingComments
+                ? before(exportAndSkip, removeLeadingComments2(types.removeComments))
+                : removeLeadingComments2(types.removeComments)
         const loggedOp = before(op, log)
         const visit
             = (path, state) => hasPrefixComment(path) && loggedOp(path, state)
@@ -99,16 +154,35 @@ const visitorForPrefixComment
 
 const hasPrefixComment
     = path => {
-        const comments = leadingComments(path)
-        return comments != null && isPrefixComment(last(comments))
+        const comments = leadingComments2(path)
+        return Array.isArray(comments) && isPrefixComment(last(comments))
     }
 
 const isPrefixComment
-    = comment => comment && !!comment.matches(/\s*export\s*for\s+test\s*/)
+    = comment =>
+        comment
+        && comment.value
+        && !!comment.value.match(/^\s*export\s*for\s+test\s*$/)
 
 const exportDeclaration
     = exportNamedDeclaration => path =>
         path.replaceWith(exportNamedDeclaration(path.node, []))
+
+const removeLeadingComments2
+    = remove => path => {
+// console.log('removeLeadingComments2', path.node.leadingComments)
+        // TODO: Why doesn't this work?
+        remove(path.node)
+        // const prev = path.getSibling(path.key)
+        // if (prev) {
+        //     remove(prev)
+        //     delete prev.trailingComments
+        // }
+        // const comments = path.node.leadingComments
+        // path.node.leadingComments
+        //     = comments.length > 1 ? comments.slice(0, -1) : null
+// console.log('removeLeadingComments2', path.node.leadingComments)
+    }
 
 // TODO: throw if already exported:
     // if (types.isExportNamedDeclaration(path.parentPath.node)) {
@@ -124,8 +198,10 @@ const visitorToSkipLowerLevels
         Class: skip
     })
 
-// const linesApart
-//     = (loc1, loc2) => Math.abs(loc1.start.line - loc2.start.line)
+// Helpers
+
+const linesApart
+    = (loc1, loc2) => Math.abs(loc1.start.line - loc2.start.line)
 
 const skip = path => path.skip()
 

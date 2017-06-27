@@ -2,7 +2,7 @@
 
 // Extracts the name of a babel node object.
 const nodeName
-    = (node) => {
+    = node => {
         switch (node.type) {
             case 'Identifier':
                 return (node.name)

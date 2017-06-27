@@ -6,13 +6,13 @@
   "scripts": {
     "build": "npm run clean && npm run typecheck && npm run build-src && npm run dist",
     "build-src": "babel --copy-files --out-dir build/src src",
-    "build-src-and-tests": "BABEL_ENV=test babel --copy-files --out-dir build/src src",
+    "build-src-and-tests": "BABEL_ENV=test babel --out-dir build/src src",
     "clean": "rm -rf dist  & rm -rf build",
     "dist": "rollup -c",
     "push": "npm run aws-package && npm run aws-deploy",
     "repl": "babel-node",
-    "temp": "BABEL_ENV=test babel",
-    "temp2": "BABEL_ENV=production babel",
+    "temp": "BABEL_ENV=test babel --out-dir build/test test",
+    "temp2": "BABEL_ENV=prod babel --out-dir build/test test",
     "test": "npm run clean && npm run typecheck && npm run build-src-and-tests",
     "typecheck": "flow"
   },
