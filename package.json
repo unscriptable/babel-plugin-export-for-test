@@ -13,12 +13,10 @@
     "repl": "babel-node",
     "temp": "BABEL_ENV=test babel --out-dir build/test test",
     "temp2": "BABEL_ENV=prod babel --out-dir build/test test",
-    "test": "npm run clean && npm run typecheck && npm run build-src-and-tests",
+    "test": "BABEL_ENV=test babel-node test",
     "typecheck": "flow"
   },
-  "dependencies": {
-    "mustache": "^2.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-plugin-syntax-flow": "^6.18.0",
@@ -28,7 +26,9 @@
     "babel-preset-env": "^1.2.1",
     "babel-register": "^6.24.0",
     "babelrc-rollup": "^3.0.0",
+    "creed": "^1.2.1",
     "flow-bin": "^0.41.0",
+    "glob": "^7.1.2",
     "rollup": "^0.41.5",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-node-resolve": "^2.0.0"

@@ -1,10 +1,10 @@
+//@flow
 /*export for test*/ const bar_test = () => {}
 /*export for test*/ const bar3_test = () => {}
-//@flow
 export type Foo = {}
 
 // this should not trigger export or be exported:
-// export for test () -> {
+// export for test const noway () => {
 //     return 'yay'
 // }
 
