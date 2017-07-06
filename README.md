@@ -45,9 +45,9 @@ JavaScript?
 JavaScript.
 
 I'd love it if this plugin got some attention and turned into an actual proposal
-to EcmaScript.  I plan to use the plugin on my production code to see how much I
-like it.  If you feel as I do -- that JavaScript needs first class tests -- then
-I encourage you to try it, too.
+to EcmaScript 2018.  I plan to use the plugin on my production code to see how
+much I like it.  If you think that JavaScript needs first class tests,  then I
+encourage you to try it, too.
 
 ## How it works
 
@@ -72,7 +72,7 @@ Some examples:
 // Another function we want to test:
 export const add = (a, b) => a + b
 
-// A test for our add function:
+// A test for our exported add function:
 /* export for test */ const test_add
     = assert => {
         assert.strictEqual(add(3, 4), 7)
@@ -83,7 +83,7 @@ export const add = (a, b) => a + b
 // Another function we want to test (note: it doesn't need to be exported!):
 const divide = (a, b) => a / b
 
-// A test for our add function (note: no specific naming convention):
+// A test for our *non-exported* divide function:
 /* export for test*/ const does_divide_work
     = assert => {
         assert.strictEqual(divide(6, 2), 3)
@@ -91,6 +91,7 @@ const divide = (a, b) => a / b
     }
 
 // Another test function that imports a test library:
+// Note: `import` doesn't work, yet:
 import /*for test*/ { describe, it, assert } from 'my-fave-test-lib'
 export /*for test*/ const anotherTest
     = () => {
@@ -105,6 +106,8 @@ export /*for test*/ const anotherTest
 ## How to use it
 
 > **TODO**
+
+> **TODO: show transformed code for testing and production**
 
 ## FAQ
 
@@ -136,6 +139,22 @@ It's your choice; either will work.  I like that `export /*for test*/` looks and
 feels more like it's part of the language and it mirrors the proposed `import
 /*for test*/` syntax, too.  However, `/*export for test*/` is strictly safer
 since it's harder for exported tests to leak into production by accident.
+
+### Can I use `/*export for testing*/` instead of `/*export for test*/`?
+
+Some native English speakers might find that "for test" doesn't feel like
+natural speech.  (Note: this is code, not English, folks!)
+babel-plugin-export-for-test allows you to type `/*export for testing*/` or
+`export /*for testing*/` instead, but I'm dubious that these versions will be
+supported in future versions.
+
+### What is my risk if `export for test` never becomes part of EcmaScript?
+
+At worst, you have some legacy code that relies on this super simple babel
+plugin.  If you find you need to migrate from babel -- or this plugin falls into
+an unmaintained state some day -- it should be very easy for an intern to export
+all of your tested functions and then move your test functions into standalone
+modules.
 
 ### What would it be like if `export for test` were accepted into EcmaScript?
 
