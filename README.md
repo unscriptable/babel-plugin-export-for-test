@@ -66,14 +66,15 @@ modifies the AST to export them or hide them, depending on the babel environment
 Unfortunately, it's impossible to augment the JavaScript language unless you fork babel's AST parser, [babylon](https://github.com/babel/babylon).  Instead,
 babel-plugin-export-for-test looks for comments that *look like* a possible extension to the language.
 
-Some examples:
+### Some examples
 
 ```js
 // Another function we want to test:
 export const add = (a, b) => a + b
 
 // A test for our exported add function:
-/* export for test */ const test_add
+/* export for test */
+const test_add
     = assert => {
         assert.strictEqual(add(3, 4), 7)
         assert.strictEqual(add(3, -4), -1)
@@ -84,7 +85,8 @@ export const add = (a, b) => a + b
 const divide = (a, b) => a / b
 
 // A test for our *non-exported* divide function:
-/* export for test*/ const does_divide_work
+/* export for test*/
+const does_divide_work
     = assert => {
         assert.strictEqual(divide(6, 2), 3)
         assert.strictEqual(divide(8, 4), 2) // can haz property tests?
@@ -101,6 +103,16 @@ export /*for test*/ const anotherTest
             })
         })
     }
+
+// The same test function with test library injected:
+export /*for test*/ const anotherTest
+    = ({ describe, it, assert }) => {
+        describe('my module', () => {
+            it('should have tests', () => {
+                assert(false) // this is always my first test!
+            })
+        })
+    }
 ```
 
 ## How to use it
@@ -108,6 +120,12 @@ export /*for test*/ const anotherTest
 > **TODO**
 
 > **TODO: show transformed code for testing and production**
+
+### More examples
+
+> **TODO: show exported object with test methods**
+
+> **TODO: show exported class with test methods**
 
 ## FAQ
 
@@ -128,6 +146,11 @@ Nope.  That's just the simplest way to show examples.
 No, you don't have to do it this way, but it's highly recommended.  You can
 either do an `import /*for test*/` (coming soon) or you can `require` your
 testing tools inside your test functions (ugly workaround).
+
+You may also export an object literal whose properties are test functions.  Add
+your testing tools as properties so you can refer to them using `this` from
+within your functions.  You can also use a class and inject your testing tools
+via the constructor.  (See the examples.)
 
 ### Do I have to export the functions I want to test?
 
