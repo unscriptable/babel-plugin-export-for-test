@@ -3,6 +3,7 @@
 const { nodeName } = require('./babelNode')
 const { before, after, trace } = require('./effect')
 const soon = require('./soon')
+const mkdirs = require('./mkdirs')
 const {
     replaceWithDeclaration, removeInlineComments, hasInlineComment
 } = require('./inlineComment')
@@ -10,9 +11,10 @@ const {
     hasPrefixComment, exportDeclaration, removePrefixComment
 } = require('./prefixComment')
 
-const { writeFileSync } = require('fs')
+const { writeFileSync, mkdirSync } = require('fs')
+const { split, join, dirname } = require('path')
 
-// const log = console.log
+const mkdir_ = mkdirs(mkdirSync, split, join)
 
 // TODO: verbose option
 // TODO: allow other options to collect tests
@@ -21,7 +23,8 @@ module.exports
     = babel => {
         const isTestEnv = process.env.BABEL_ENV === 'test'
         const tests = {}
-        const writeManifest = soon(writeJson(writeFileSync))
+        const ensureDirThenWriteJson = before(writeJson, ensureDir)
+        const writeManifest = soon(ensureDirThenWriteJson(writeFileSync))
         const writeTests
             = (path, state) => {
                 const filename = state.opts.manifest || 'test_manifest.json'
@@ -33,7 +36,6 @@ module.exports
         const visitor
             = Object.assign(
                 {},
-                visitorToSkipLowerLevels(),
                 visitorForInlineComment(collect, babel, isTestEnv),
                 visitorForPrefixComment(collect, babel, isTestEnv)
             )
@@ -52,6 +54,10 @@ const collectTestNames
 const writeJson
     = write => (filename, thing) =>
         write(filename, JSON.stringify(thing))
+
+const ensureDir
+    = filename =>
+        mkdir_(dirname(filename))
 
 // Inline export comment: `export /* for test */`
 
@@ -94,15 +100,6 @@ const visitorForPrefixComment
     // if (types.isExportNamedDeclaration(path.parentPath.node)) {
     //     throw path.buildCodeFrameError('Declaration declared as `export for test` is already exported')
     // }
-
-// Performance optimizations
-
-// Create visitor
-const visitorToSkipLowerLevels
-    = _ => ({
-        Function: skip,
-        Class: skip
-    })
 
 // Helpers
 
