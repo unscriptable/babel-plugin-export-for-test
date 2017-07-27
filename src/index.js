@@ -81,14 +81,10 @@ const visitorForInlineComment
 // Create visitor
 const visitorForPrefixComment
     = (log, { types }, isTestEnv) => {
-        const fastExport
-            = trace(
-                exportDeclaration(types.exportNamedDeclaration),
-                skip
-            )
+        const exportDecl = exportDeclaration(types.exportNamedDeclaration)
         const op
             = isTestEnv
-                ? before(fastExport, removePrefixComment(types.removeComments))
+                ? before(exportDecl, removePrefixComment(types.removeComments))
                 : removePrefixComment(types.removeComments)
         const loggedOp = before(op, log)
         const visit
@@ -106,5 +102,3 @@ const visitorForPrefixComment
 
 // const linesApart
 //     = (loc1, loc2) => Math.abs(loc1.start.line - loc2.start.line)
-
-const skip = path => path.skip()
