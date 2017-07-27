@@ -7,7 +7,7 @@ type Join = (...x:Array<string>) => string
 */
 
 const mkdirs
-    = exports.mkdirs
+    = module.exports
     = (mkdirSync/*:Function*/, split/*:Split*/, join/*:Join*/) => {
         const mkdir = ensureDir(mkdirSync)
         return (dir/*:string*/) =>
