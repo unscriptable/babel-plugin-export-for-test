@@ -23,8 +23,9 @@ module.exports
     = babel => {
         const isTestEnv = process.env.BABEL_ENV === 'test'
         const tests = {}
-        const ensureDirThenWriteJson = before(writeJson, ensureDir)
-        const writeManifest = soon(ensureDirThenWriteJson(writeFileSync))
+        const write = writeJson(writeFileSync)
+        const ensureDirThenWrite = before(write, ensureDir)
+        const writeManifest = soon(ensureDirThenWrite)
         const writeTests
             = (path, state) => {
                 const filename = state.opts.manifest || 'test_manifest.json'
