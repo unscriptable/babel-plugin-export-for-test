@@ -12,9 +12,9 @@ const {
 } = require('./prefixComment')
 
 const { writeFileSync, mkdirSync } = require('fs')
-const { split, join, dirname } = require('path')
+const { sep, join, dirname } = require('path')
 
-const mkdir_ = mkdirs(mkdirSync, split, join)
+const mkdir_ = mkdirs(mkdirSync, dir => dir.split(sep), join)
 
 // TODO: verbose option
 // TODO: allow other options to collect tests
