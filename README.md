@@ -5,49 +5,56 @@
 ## What is babel-plugin-export-for-test?
 
 babel-plugin-export-for-test is a babel plugin that will either export all
-functions marked "for test" or effectively hide them.  In theory, this plugin
-will also export or hide classes or other exportable values that are marked "for
-test", but this has not yet been tested.  In a future version, it will also
-import modules that are marked "for test".
+functions marked "for test" or effectively hide them, depending on whether you
+are compiling code to be tested or to be deployed to production.  In theory,
+this plugin will also work with classes or other exportable values that are
+marked "for test", but I haven't tried these, yet.  A future version will also
+support *importing* modules that are marked "for test".
 
 ## Why create it?
 
-(a.k.a. "The history of why John hates JavaScript unit tests.")
+### a.k.a. "The history of why John hates JavaScript unit tests."
 
 I've been actively writing JavaScript since 1996.  All this time, I've struggled
 to force myself to slog through the tedium of writing unit tests.  They should
 be way easier -- and more fun -- to create and maintain.
 
-One way to make unit tests easier is to co-locate them alongside your JavaScript
-module.  I've tried flavors of this for several years with limited success. Most
-of the popular tools make it hard to interleave your tests with your production
-code.  The more that JavaScript becomes a *compiled* language, the easier it
-has become to co-locate unit tests.
+One way to make unit tests easier is to co-locate them in the same directory as
+your JavaScript modules.  I've tried flavors of this for several years with
+limited success. Most of the popular tools make it hard to interleave your tests
+with your production code.  The more that JavaScript becomes a *compiled*
+language, however, the easier it has become to co-locate unit tests.
 
-However...
+### Then I discovered doc tests.
 
 While working in some other languages, such as Haskell, I've come to appreciate
-the ease at which I was able to write "doc tests".  Doc tests reside *inside*
-the same module as the functions they test.  This seems like the holy grail of
-unit testing: there's no need to export private functions just so you can test
-them.  And maintenance is braindead obvious since the tests are *right there*.
+the ease at which I was able to write [doc
+tests](https://docs.python.org/3/library/doctest.html).  Doc tests reside
+*inside* the same module as the functions they test.  This seemed like the holy
+grail of unit testing: there's no need to export private functions just so you
+can test them.  And maintenance is braindead obvious since the tests are *right
+there*.
 
-Then I was introduced to Clojure.
+One problem with doc tests is that they aren't normally noticed by linters,
+compilers, etc.  (You can get *some* linters and compilers to see them, but it
+can get kinda hacky.)
+
+### Then I was introduced to Clojure.
 
 Clojure elevates tests to *first class* via the
 [`deftest`](https://clojuredocs.org/clojure.test/deftest) keyword.  Clojure
 environments inherently know tests from production code.  You can (and should!)
-write your tests right alongside your production functions.  This got me
-thinking: why shouldn't all languages do this?  Why can't we do this in
-JavaScript?
+write your tests right alongside your production functions -- *i.e. in the same
+file!*  This got me thinking: why shouldn't all languages do this?  Why can't we
+do this in JavaScript?
 
-> This plugin is an attempt to pretend that tests are *first class* in
-JavaScript.
+> **In short: This plugin is an attempt to pretend that tests are *first class*
+in JavaScript.**
 
 I'd love it if this plugin got some attention and turned into an actual proposal
-to EcmaScript 2018.  I plan to use the plugin on my production code to see how
-much I like it.  If you think that JavaScript needs first class tests,  then I
-encourage you to try it, too.
+to EcmaScript 2018.  I've been using the plugin on my production code to see how
+much I like it.  So far, I love it.  If you think that JavaScript needs first
+class tests,  then I encourage you to try it, too.
 
 ## How it works
 
@@ -61,15 +68,25 @@ exported for testing purposes.  When it encounters these values, it either
 modifies the AST to export them or hide them, depending on the babel environment
 (`BABEL_ENV` env var).
 
+Values that are hidden should get removed from the code when you comile it for
+production.  Some tools that do this well are [Rollup](https://rollupjs.org) or
+[Webpack](https://webpack.js.org).
+
+The plugin also creates a manifest.json file containing a mapping of all files
+with tests to the names of the exported tests.  You can use this manifest to
+help your test framework find the tests.
+
 ### Not an EcmaScript extension (yet)
 
-Unfortunately, it's impossible to augment the JavaScript language unless you fork babel's AST parser, [babylon](https://github.com/babel/babylon).  Instead,
-babel-plugin-export-for-test looks for comments that *look like* a possible extension to the language.
+Unfortunately, it's impossible to augment the JavaScript language unless you
+fork babel's AST parser, [babylon](https://github.com/babel/babylon).  Instead,
+babel-plugin-export-for-test looks for comments that *look like* a possible
+extension to the language.
 
 ### Some examples
 
 ```js
-// Another function we want to test:
+// A function we want to test:
 export const add = (a, b) => a + b
 
 // A test for our exported add function:
@@ -104,7 +121,8 @@ export /*for test*/ const anotherTest
         })
     }
 
-// The same test function with test library injected:
+// The same test function with test library injected.
+// Injection is the preferred way:
 export /*for test*/ const anotherTest
     = ({ describe, it, assert }) => {
         describe('my module', () => {
@@ -120,6 +138,8 @@ export /*for test*/ const anotherTest
 > **TODO**
 
 > **TODO: show transformed code for testing and production**
+
+> **TODO: show example using [tap](https://github.com/tapjs/node-tap)**
 
 ### More examples
 
@@ -160,7 +180,7 @@ Nope.  See the examples!
 
 It's your choice; either will work.  I like that `export /*for test*/` looks and
 feels more like it's part of the language and it mirrors the proposed `import
-/*for test*/` syntax, too.  However, `/*export for test*/` is strictly safer
+/*for test*/` syntax, too.  However, `/*export for test*/` is probably safer
 since it's harder for exported tests to leak into production by accident.
 
 ### Can I use `/*export for testing*/` instead of `/*export for test*/`?
@@ -169,20 +189,20 @@ Some native English speakers might find that "for test" doesn't feel like
 natural speech.  (Note: this is code, not English, folks!)
 babel-plugin-export-for-test allows you to type `/*export for testing*/` or
 `export /*for testing*/` instead, but I'm dubious that these versions will be
-supported in future versions.
+supported in future versions.  Feedback appreciated!
 
 ### What is my risk if `export for test` never becomes part of EcmaScript?
 
 At worst, you have some legacy code that relies on this super simple babel
 plugin.  If you find you need to migrate from babel -- or this plugin falls into
-an unmaintained state some day -- it should be very easy for an intern to export
-all of your tested functions and then move your test functions into standalone
-modules.
+an unmaintained state some day -- it should be very easy for an intern (heh!) to
+export all of your tested functions and then move your test functions into
+standalone modules.
 
 ### What would it be like if `export for test` were accepted into EcmaScript?
 
 > TODO: show unicorns and rainbows and a few examples
 
-### What are some of the alternatives to `export for test`?
+### What are some of the alternatives to the proposed `export for test` syntax?
 
-> TODO: `deftest` keyword, `@test` annotation, co-located files, etc.
+> TODO: `deftest` keyword, `@test` annotation, etc.
