@@ -56,6 +56,10 @@ to EcmaScript 2018.  I've been using the plugin on my production code to see how
 much I like it.  So far, I love it.  If you think that JavaScript needs first
 class tests,  then I encourage you to try it, too.
 
+### Benefits
+
+> TODO: simpler code, far less hassle, less boilerplate, feels totally natural
+
 ## How it works
 
 ### Babel plugin
