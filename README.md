@@ -227,4 +227,4 @@ standalone modules.
 
 ### What are some of the alternatives to the proposed `export for test` syntax?
 
-> TODO: `deftest` keyword, `@test` annotation, etc.
+> TODO: `deftest` keyword, `@test` annotation, `test {}` block, etc.
