@@ -2,6 +2,24 @@
 
 > **TODO: TOC**
 
+```js
+// Simple, sample code in an ideal world!
+export const add = (a, b) => a + b
+
+import for test { check, property as prop, gen } from 'quickcheck'
+export for test const test_add
+    = assert => {
+        assert(
+            check(prop([gen.int], x => add(x, -x) === 0)),
+            'should obey zero property'
+        )
+        assert(
+            check(prop([gen.int, gen.int], (x, y) => add(x, y) === add(y, x))),
+            'should obey commutative property'
+        )
+    }
+```
+
 ## What is babel-plugin-export-for-test?
 
 babel-plugin-export-for-test is a babel plugin that will either export all
